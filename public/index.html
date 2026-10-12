@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FiberGuard: Optical Link Simulator & AI Fault Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="top-header">
+    <div class="top-header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="4"/>
+            <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+            <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+          </svg>
+        </div>
+        <h1>FiberGuard <span class="brand-tag">1550nm C-Band</span></h1>
+      </div>
+
+      <div class="header-right">
+        <div class="status-pill">
+          <span class="status-dot online" id="statusIndicator"></span>
+          <span id="statusText">Connecting...</span>
+        </div>
+
+        <div class="model-select-wrapper">
+          <label for="modelSelect">Model:</label>
+          <select id="modelSelect" class="select-model">
+            <option value="Random Forest">Random Forest</option>
+            <option value="Gradient Boosting">Gradient Boosting</option>
+            <option value="k-Nearest Neighbors">k-NN (9)</option>
+            <option value="Multi-Layer Perceptron">MLP Neural Net</option>
+          </select>
+        </div>
+
+        <button class="btn-icon" id="themeToggle" title="Toggle Theme">☀️</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Simulator Layout -->
+  <div class="main-wrapper">
+
+    <!-- Left Sidebar: Simulator Controls -->
+    <aside class="sidebar">
+      
+      <!-- Link Settings -->
+      <div class="card">
+        <div class="card-title">
+          <span>Link Design</span>
+          <small id="vL">80 km</small>
+        </div>
+
+        <div class="ctl-row">
+          <div class="ctl-header">
+            <span>Fiber Length</span>
+          </div>
+          <input type="range" id="sL" min="20" max="120" step="1" value="80">
+        </div>
+
+        <div class="ctl-row">
+          <div class="ctl-header">
+            <span>Launch Power</span>
+            <span class="ctl-val" id="vP">+0.0 dBm</span>
+          </div>
+          <input type="range" id="sP" min="-4" max="8" step="0.5" value="0">
+        </div>
+
+        <div class="ctl-row">
+          <div class="ctl-header"><span>Bit Rate</span></div>
+          <select id="sR" class="input-ctl">
+            <option value="10">10 Gb/s</option>
+            <option value="2.5">2.5 Gb/s</option>
+            <option value="40">40 Gb/s</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Fault Injection -->
+      <div class="card">
+        <div class="card-title">
+          <span>Inject Fault</span>
+          <small>Interactive</small>
+        </div>
+
+        <div class="chips-grid">
+          <button class="fault-chip full-width active" data-fault="0">
+            <span class="chip-dot" style="background:#3ddc97"></span>
+            Normal (Healthy)
+          </button>
+          <button class="fault-chip" data-fault="1">
+            <span class="chip-dot" style="background:#ff6b6b"></span>
+            Fiber Cut
+          </button>
+          <button class="fault-chip" data-fault="2">
+            <span class="chip-dot" style="background:#ffc857"></span>
+            Macro-Bend
+          </button>
+          <button class="fault-chip" data-fault="3">
+            <span class="chip-dot" style="background:#ff9a5c"></span>
+            Dirty Conn.
+          </button>
+          <button class="fault-chip" data-fault="4">
+            <span class="chip-dot" style="background:#b69cff"></span>
+            Aged Fiber
+          </button>
+          <button class="fault-chip" data-fault="5">
+            <span class="chip-dot" style="background:#5ee3ff"></span>
+            EDFA Fault
+          </button>
+          <button class="fault-chip" data-fault="6">
+            <span class="chip-dot" style="background:#ff7ccf"></span>
+            Dispersion
+          </button>
+        </div>
+
+        <div class="ctl-row" id="cPos">
+          <div class="ctl-header">
+            <span>Location</span>
+            <span class="ctl-val" id="vPos">36.0 km</span>
+          </div>
+          <input type="range" id="sPos" min="8" max="92" step="1" value="45">
+        </div>
+
+        <div class="ctl-row" id="cSev">
+          <div class="ctl-header">
+            <span id="lSev">Severity</span>
+            <span class="ctl-val" id="vSev">50%</span>
+          </div>
+          <input type="range" id="sSev" min="10" max="100" step="1" value="50">
+        </div>
+
+        <div class="btn-row">
+          <button class="btn" id="bMeasure">Re-Measure</button>
+          <button class="btn primary" id="bRandom">Random Fault</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area: Divided into 4 Clean Tabs -->
+    <main class="content-area">
+
+      <!-- Tab Buttons -->
+      <nav class="tabs-bar">
+        <button class="tab-btn active" id="tabBtn-overview" data-tab="overview" onclick="switchTab('overview')">
+          <i>🛰️</i> Simulator & Diagnosis
+        </button>
+        <button class="tab-btn" id="tabBtn-scopes" data-tab="scopes" onclick="switchTab('scopes')">
+          <i>📈</i> OTDR & Eye Scopes
+        </button>
+        <button class="tab-btn" id="tabBtn-benchmarks" data-tab="benchmarks" onclick="switchTab('benchmarks')">
+          <i>🧠</i> AI Accuracy & Scores
+        </button>
+        <button class="tab-btn" id="tabBtn-summary" data-tab="summary" onclick="switchTab('summary')">
+          <i>📋</i> Quick Reference & Presets
+        </button>
+      </nav>
+
+      <!-- TAB 1: Simulator & Diagnosis -->
+      <section class="tab-panel active" id="tab-overview">
+        <div class="simulator-stack">
+
+          <!-- Waveguide Visualizer -->
+          <div class="card" style="padding:10px">
+            <div class="canvas-container">
+              <canvas id="cLink"></canvas>
+            </div>
+          </div>
+
+          <!-- 5 Clean KPI Badges -->
+          <div class="kpis-grid">
+            <div class="kpi-box good" id="kpiRxPower">
+              <div class="kpi-lbl">Rx Power</div>
+              <div class="kpi-num">-15.2 <small>dBm</small></div>
+              <div class="kpi-desc">+2.8 dB margin</div>
+            </div>
+
+            <div class="kpi-box good" id="kpiOsnr">
+              <div class="kpi-lbl">OSNR</div>
+              <div class="kpi-num">23.8 <small>dB</small></div>
+              <div class="kpi-desc">Nominal (>22 dB)</div>
+            </div>
+
+            <div class="kpi-box good" id="kpiQFactor">
+              <div class="kpi-lbl">Q-Factor</div>
+              <div class="kpi-num">6.8</div>
+              <div class="kpi-desc">16.7 dB</div>
+            </div>
+
+            <div class="kpi-box good" id="kpiBer">
+              <div class="kpi-lbl">BER</div>
+              <div class="kpi-num">&lt; 10<sup>−12</sup></div>
+              <div class="kpi-desc">Error-free</div>
+            </div>
+
+            <div class="kpi-box good" id="kpiDispersion">
+              <div class="kpi-lbl">Pulse Spread</div>
+              <div class="kpi-num">27 <small>ps</small></div>
+              <div class="kpi-desc">27% of UI</div>
+            </div>
+          </div>
+
+          <!-- Diagnosis & Power Budget -->
+          <div class="diag-budget-grid">
+            <div class="card" id="diagCard">
+              <div class="card-title">
+                <span>AI Diagnosis</span>
+                <small>Autonomous</small>
+              </div>
+              <div id="diagContent">
+                <p style="color:var(--text-muted)">Evaluating link...</p>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">
+                <span>Power Budget</span>
+                <small>Waterfall dB</small>
+              </div>
+              <table class="budget-table-simple" id="budgetTable"></table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 2: OTDR & Eye Scopes -->
+      <section class="tab-panel" id="tab-scopes">
+        <div class="scopes-grid">
+
+          <div class="card">
+            <div class="card-title">
+              <span>OTDR Backscatter Trace</span>
+              <small>Hover to inspect</small>
+            </div>
+            <div class="canvas-container">
+              <canvas id="cOtdr"></canvas>
+            </div>
+            <p class="scope-note" id="otdrNote"></p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>Receiver Eye Diagram</span>
+              <small>PRBS multi-trace</small>
+            </div>
+            <div class="canvas-container">
+              <canvas id="cEye"></canvas>
+            </div>
+            <p class="scope-note" id="eyeNote"></p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 3: AI Model Accuracy & Scores -->
+      <section class="tab-panel" id="tab-benchmarks">
+        <div class="simulator-stack">
+
+          <!-- 4 Clean Metric Cards -->
+          <div class="metrics-row">
+            <div class="metric-card" style="border-left:3px solid var(--emerald)">
+              <strong id="bmAccuracy">91.1%</strong>
+              <span>Overall AI Accuracy</span>
+            </div>
+            <div class="metric-card" style="border-left:3px solid var(--cyan)">
+              <strong id="bmF1">90.7%</strong>
+              <span>Macro F1-Score</span>
+            </div>
+            <div class="metric-card" style="border-left:3px solid var(--rose)">
+              <strong id="bmLegacyAcc">63.8%</strong>
+              <span>Legacy 3 dB Alarm</span>
+            </div>
+            <div class="metric-card" style="border-left:3px solid var(--violet)">
+              <strong id="bmTrainTime">0.85s</strong>
+              <span>Training Duration</span>
+            </div>
+          </div>
+
+          <div class="models-nav" id="modelPills"></div>
+
+          <!-- Confusion Matrix & Per-Class Scores -->
+          <div class="cm-container">
+            <div class="card">
+              <div class="card-title">
+                <span>Confusion Matrix</span>
+                <small>1,050 Test Links</small>
+              </div>
+              <div style="overflow-x:auto">
+                <table class="cm-table" id="cmTable"></table>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">
+                <span>Per-Class Accuracy</span>
+              </div>
+              <div style="overflow-x:auto">
+                <table class="per-class-tbl" id="perClassTable"></table>
+              </div>
+              <div style="margin-top:10px">
+                <h4 style="font-size:12px;margin-bottom:6px;color:var(--text-muted)">Key Feature Weights</h4>
+                <div id="featImportanceBox"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 4: Quick Reference & Presets -->
+      <section class="tab-panel" id="tab-summary">
+        <div class="summary-stack">
+
+          <!-- 1-Click Presets -->
+          <div class="card">
+            <div class="card-title">
+              <span>Quick Test Scenarios</span>
+              <small>Click to test in simulator</small>
+            </div>
+            <div class="presets-grid" id="incidentGrid"></div>
+          </div>
+
+          <!-- Clean Fault Reference Table -->
+          <div class="card">
+            <div class="card-title">
+              <span>Optical Fault Quick Reference</span>
+              <small>Cheat Sheet</small>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="ref-table">
+                <thead>
+                  <tr>
+                    <th>Fault Type</th>
+                    <th>What You See</th>
+                    <th>OTDR Trace</th>
+                    <th>Cause & Corrective Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><b style="color:#3ddc97">Normal Link</b></td>
+                    <td>Normal optical power & clean eye</td>
+                    <td>0.20 dB/km linear slope</td>
+                    <td>Link healthy. No action required.</td>
+                  </tr>
+                  <tr>
+                    <td><b style="color:#ff6b6b">Fiber Cut</b></td>
+                    <td>Total Loss of Signal (LOS)</td>
+                    <td>High reflection spike, drops to -50 dB</td>
+                    <td>Severed cable. Re-splice at reported distance mark.</td>
+                  </tr>
+                  <tr>
+                    <td><b style="color:#ffc857">Macro-Bend</b></td>
+                    <td>Excess attenuation</td>
+                    <td>Step drop with <em>no reflection</em></td>
+                    <td>Bend tighter than 30 mm. Release pinch in tray/duct.</td>
+                  </tr>
+                  <tr>
+                    <td><b style="color:#ff9a5c">Dirty Connector</b></td>
+                    <td>Excess attenuation</td>
+                    <td>Step drop <em>plus reflection spike</em></td>
+                    <td>Contaminated end-face. Clean with IPA wipe & re-seat.</td>
+                  </tr>
+                  <tr>
+                    <td><b style="color:#b69cff">Aged Fiber</b></td>
+                    <td>High loss across span</td>
+                    <td>Steep slope (> 0.25 dB/km)</td>
+                    <td>Water ingress / cable aging. Re-budget link or replace.</td>
+                  </tr>
+                  <tr>
+                    <td><b style="color:#5ee3ff">EDFA Failure</b></td>
+                    <td>Power & OSNR drop</td>
+                    <td>OTDR looks 100% normal</td>
+                    <td>Degraded 980 nm pump laser. Swap amplifier module.</td>
+                  </tr>
+                  <tr>
+                    <td><b style="color:#ff7ccf">Dispersion</b></td>
+                    <td>Eye squeezed shut (ISI)</td>
+                    <td>Power & OTDR are normal</td>
+                    <td>Pulse spread Δτ > UI. Add DCF or dispersion compensation.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Formulas & CSV Download Bar -->
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div style="font-size:12px;color:var(--text-muted)">
+              <b>Formulas:</b> 
+              <code>OSNR ≈ 58 + Pin − NF</code> | 
+              <code>Δτ = D · L · Δλ</code> | 
+              <code>BER = ½ erfc(Q/√2)</code>
+            </div>
+            <a href="/api/dataset/export.csv" class="btn primary" download="fiberguard_telemetry.csv">
+              ⬇️ Export Dataset (CSV)
+            </a>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/client-physics.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/link-view.js"></script>
+  <script src="js/otdr-scope.js"></script>
+  <script src="js/eye-scope.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

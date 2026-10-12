@@ -93,6 +93,25 @@ uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 
 ---
 
+## ⚡ Deploy to Vercel
+
+FiberGuard is configured for zero-config deployment on **Vercel** with support for Serverless Python (`api/index.py`) and static asset hosting (`public/`).
+
+### Deploy via Vercel Dashboard (Easiest)
+1. Go to [vercel.com](https://vercel.com) and log in with your GitHub account.
+2. Click **"Add New..."** -> **"Project"**.
+3. Select your repository: **`darkacer211/FiberGuard`**.
+4. Leave the default settings (Framework Preset: **Other**, Root Directory: **`./`**).
+5. Click **"Deploy"**.
+
+### Deploy via Vercel CLI
+```bash
+npm i -g vercel
+vercel
+```
+
+---
+
 ## 📡 REST API Reference
 
 | Endpoint | Method | Description |
